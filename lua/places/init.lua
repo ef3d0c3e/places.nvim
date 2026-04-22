@@ -38,13 +38,16 @@ function M.setup(opts)
 		group    = M.au_group,
 		callback = function()
 			if M.state.jumping then return end
+
 			local buf = vim.api.nvim_get_current_buf()
+			if not M.util.is_trackable(buf) then return end
+
 			local pos = vim.api.nvim_win_get_cursor(0)
 			-- Try to deduplicate
 			local prev_id = M.state.find_duplicate(buf, pos[1], pos[2])
 			if prev_id then
 				M.state.current_id = prev_id
-				M.state.places[prev_id].timestamp = vim.loop.hrtime()
+				M.state.update_node(prev_id, pos[1], pos[2])
 			else
 				M.state.register(buf, pos[1], pos[2])
 			end
@@ -52,6 +55,21 @@ function M.setup(opts)
 			M.buffer.refresh()
 		end,
 	})
+
+	-- Update the current node when cursor changes
+	vim.api.nvim_create_autocmd("CursorMoved", {
+		group    = M.au_group,
+		callback = function()
+			if M.state.jumping then return end
+
+			local buf = vim.api.nvim_get_current_buf()
+			if not M.util.is_trackable(buf) then return end
+
+			local pos = vim.api.nvim_win_get_cursor(0)
+			M.state.on_cursor_moved(buf, pos[1], pos[2])
+		end,
+	})
+
 
 	vim.api.nvim_create_user_command("PlacesTree", M.buffer.open, {})
 	--vim.api.nvim_create_user_command("PlacesGo", function(opts)

@@ -17,10 +17,16 @@ local function new_id()
 	return id
 end
 
+-- Get preview lines
+local function preview_lines(bufnr, line)
+	local line_text = vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)
+
+	if not line_text or not line_text[1] then return "" end
+	return line_text[1]:match"^%s*(.*)"
+end
+
 -- Register a new place
 function M.register(bufnr, line, col)
-	if M.jumping then return end
-	if not M.util.is_trackable(bufnr) then return end
 
 	local filename = vim.api.nvim_buf_get_name(bufnr)
 
@@ -29,8 +35,6 @@ function M.register(bufnr, line, col)
 		local cur = M.places[M.current_id]
 		if cur and cur.bufnr == bufnr and cur.line == line then return end
 	end
-
-	local line_text = vim.api.nvim_buf_get_lines(bufnr, line - 1, line, false)
 
 	-- Insert place
 	local id = new_id()
@@ -41,7 +45,7 @@ function M.register(bufnr, line, col)
 		line      = line,
 		col       = col,
 		timestamp = vim.loop.hrtime(),
-		line_text = #line_text >= 1 and line_text[1] or "",
+		line_text = preview_lines(bufnr, line),
 		parent_id = M.current_id,
 		children  = {},
 	}
@@ -62,22 +66,32 @@ function M.find_duplicate(bufnr, line, col)
 	return M.lookup[lookup_key]
 end
 
----- Update a node
---function M.update_node(id, line, col)
---	local node = M.places[id]
---
---	-- Remove previous lookup entry
---	local lookup_key = string.format("%d:%d:%d", node.bufnr, node.line, node.col)
---	M.lookup[lookup_key] = nil
---
---	node.timestamp = vim.loop.hrtime()
---	node.line = line
---	node.col = col
---
---	-- Insert new lookup entry
---	lookup_key = string.format("%d:%d:%d", node.bufnr, node.line, node.col)
---	M.lookup[lookup_key] = id
---end
+-- Update a node
+function M.update_node(id, line, col)
+	local node = M.places[id]
+
+	-- Remove previous lookup entry
+	local lookup_key = string.format("%d:%d:%d", node.bufnr, node.line, node.col)
+	M.lookup[lookup_key] = nil
+
+	node.timestamp = vim.loop.hrtime()
+	node.line = line
+	node.col = col
+	node.line_text = preview_lines(node.bufnr, line)
+
+	-- Insert new lookup entry
+	lookup_key = string.format("%d:%d:%d", node.bufnr, node.line, node.col)
+	M.lookup[lookup_key] = id
+end
+
+function M.on_cursor_moved(bufnr, line, col)
+
+	local node = M.current_id and M.places[M.current_id]
+
+	if not node or node.bufnr ~= bufnr then return end
+	M.update_node(M.current_id, line, col)
+
+end
 
 function M.setup()
 	M.util = require("places.util")
