@@ -42,6 +42,8 @@ M.config = {
 	separator = { fg = "#2d8f9b" },
 	line_number = { fg = "#2d8f9b" },
 	line_text = { link = "Comment" },
+
+	decorate = nil
 }
 
 -- {{{ Sorting
@@ -194,14 +196,22 @@ local function row_chunks(node, depth, side_count, is_current)
 
 	branch_tail(chunks, side_count)
 
-	chunks[#chunks + 1] = { "  ", "Normal" }
-	-- DEBUGGING:
-	--chunks[#chunks + 1] = { "[" .. node.id .. "]", "BranchId" }
-	chunks[#chunks + 1] = { buffer_name(node.filename), "PlacesBufferName" }
-	chunks[#chunks + 1] = { ":", "PlacesSeparator" }
-	chunks[#chunks + 1] = { tostring(node.line), "PlacesLineNumber" }
-	chunks[#chunks + 1] = { "  ", "Normal" }
-	chunks[#chunks + 1] = { node.line_text, "PlacesLineText" }
+	if not M.config.decorate then
+		chunks[#chunks + 1] = { "  ", "Normal" }
+		-- DEBUGGING:
+		--chunks[#chunks + 1] = { "[" .. node.id .. "]", "BranchId" }
+		chunks[#chunks + 1] = { buffer_name(node.filename), "PlacesBufferName" }
+		chunks[#chunks + 1] = { ":", "PlacesSeparator" }
+		chunks[#chunks + 1] = { tostring(node.line), "PlacesLineNumber" }
+		chunks[#chunks + 1] = { "  ", "Normal" }
+		chunks[#chunks + 1] = { node.line_text, "PlacesLineText" }
+	else
+		local decorations = M.config.decorate(node)
+		---@diagnostic disable-next-line: unused-local
+		for i, chunk in ipairs(decorations) do
+			chunks[#chunks + 1] = chunk
+		end
+	end
 
 
 	return chunks

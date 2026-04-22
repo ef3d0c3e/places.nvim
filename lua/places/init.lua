@@ -22,7 +22,6 @@ M.ns = vim.api.nvim_create_namespace("PlacesNamespace")
 
 function M.setup(opts)
 	opts = opts or {}
-	M.config = vim.tbl_deep_extend("force", M.config, opts)
 	M.util = require("places.util")
 	-- State
 	M.state = require("places.state")

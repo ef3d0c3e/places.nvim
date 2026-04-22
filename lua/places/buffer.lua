@@ -108,18 +108,6 @@ local function attach_tree_autocmds(buf)
 		end,
 	})
 end
-function dump(o)
-	if type(o) == 'table' then
-		local s = '{ '
-		for k, v in pairs(o) do
-			if type(k) ~= 'number' then k = '"' .. k .. '"' end
-			s = s .. '[' .. k .. '] = ' .. dump(v) .. ','
-		end
-		return s .. '} '
-	else
-		return tostring(o)
-	end
-end
 
 -- Render rows into the tree buffer
 local function render_rows(rows)
@@ -135,8 +123,10 @@ local function render_rows(rows)
 
 	-- Build lines so the buffer is searchable
 	local lines = {}
+	---@diagnostic disable-next-line: unused-local
 	for i, row in ipairs(rows) do
 		local line = ""
+		---@diagnostic disable-next-line: unused-local
 		for j, component in ipairs(row.chunks) do
 			line = line .. component[1]
 		end
@@ -144,7 +134,9 @@ local function render_rows(rows)
 	end
 
 	vim.bo[buf].modifiable = true
+	vim.bo[buf].readonly = false
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+	vim.bo[buf].readonly = true
 	vim.bo[buf].modifiable = false
 
 	-- Extmarks
