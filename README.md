@@ -18,7 +18,7 @@ Here's a demo of the plugin in action:
 # Installation
 
 **lazy.nvim**
-```
+```lua
 {
     "ef3d0c3e/places.nvim"
     lazy = false,
@@ -31,7 +31,7 @@ Here's a demo of the plugin in action:
 ```
 
 Currently, only rendering supports custom options, here are the default options:
-```
+```lua
 render = {
 	-- Edge characters
 	edges = {
@@ -83,7 +83,7 @@ render = {
 
 **places.nvim** relies on [branch drawing symbols](https://github.com/kovidgoyal/kitty/pull/7681) which are fairly new.
 However, it's possible to use traditional box-drawing characters as replacement:
-```
+```lua
 edges = {
     LUR = "┴",
     LU = "┘",
@@ -112,6 +112,38 @@ You can bind it to a key using `require("places").buffer.open()`
  - `require("places").buffer.jump(id)` jumps to the place at index **id**
  - `require("places").buffer.preview(id)` preview the place at index **id** (replace the current window temporarily until `cancel_preview` is called)
  - `require("places").buffer.cancel_preview()` disables the preview
+
+# Custom decorator
+
+**places.nvim** lets you customize the decorator that displays buffer name, line number and buffer preview.
+
+To override the the default decorator,
+```lua
+-- Must return an array of extmark-compatible components
+render.decorate = function(node)
+    -- node contains the following:
+    -- `id` Node numeric ID
+    -- `bufnr` Buffer number
+    -- `filename` Filename
+    -- `line` Line number
+    -- `col` Column number
+    -- `timestamp` Last access timestamp
+    -- `line_text` Buffer content on the node's line
+    -- `parent_id` ID of the node's parent
+    -- `children` Array of ID for the node's children
+    local chunks = {}
+
+    chunks[#chunks + 1] = {" ", "Normal"}
+
+    -- Devicon integration
+    local ft_icon, ft_highlight = require("nvim-web-devicons").get_icon(node.filename)
+    chunks[#chunks + 1] = {ft_icon, ft_highlight}
+    chunks[#chunks + 1] = {" ", "Normal"}
+    chunks[#chunks + 1] = {node.filename, "Normal"}
+
+    return chunks
+end
+```
 
 # License
 
